@@ -12,6 +12,7 @@ lxml = "^4.9.3"
 beautifulsoup4 = "^4.12.2"
 httpx = "^0.26.0"
 selectolax = "^0.3.17"
+pandas = "^2.1.4"
 
 
 [build-system]

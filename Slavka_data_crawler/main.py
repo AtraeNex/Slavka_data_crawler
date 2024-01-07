@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 from dataclasses import dataclass, asdict, fields
 import json
 import csv
+import pandas as pd
 
 
 #nauja dataclass, info rusiavimui
@@ -109,25 +110,29 @@ def main():
     products = []
     baseurl = "https://www.rei.com/c/camping-and-hiking?page="
     #lupinam per puslapius, ir istraukiam produktus
-    for x in range(134,136):
-        print(f"Surenkam info is puslapio: {x}")
+    for x in range(134,135):
+        print(f"Surenkam info is puslapio {x}, prasome palaukti...")
         html = get_html(baseurl, page=x) #html failas = get_html f-jai; x -> page=x, nes tai tapo keyword argumentu get_html f-joje
 
         if html is False:
             break
         product_urls = parse_search_page(html)
         for url in product_urls:
-            print(url)
+            #print(url)
             html = get_html(url)
 
             products.append(parse_item_page(html)) #-> nebereikia, kai turim append_to_csv f-ja
             #append_to_csv(parse_item_page(html)) #kiekviena karta grazins dictionary
             #imetam uzdelsima 0.1sec, kad nesiusti per daug requestu vienu metu
             #ikeliam uzdelsima i produkto loop'a, kad uzdelsimas butu kiekviename PRODUKTO puslapyje, o ne PRODUKTU puslapyje
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
     export_to_json(products)
     export_to_csv(products)
+    #print(products)
+    df = pd.DataFrame(products)
+    print(df)
+
 
 #jeigu paleidziam si main.py tiesiogiai - iskvies sia funkcija, o jeigu importuosim main.py, tuomet - ne
 if __name__ == "__main__":
