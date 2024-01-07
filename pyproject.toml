@@ -2,13 +2,14 @@
 name = "Slavka_data_crawler"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["Viaceslav Vasilasko vvasilasko@gmail.com"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
 requests = "^2.31.0"
 lxml = "^4.9.3"
+beautifulsoup4 = "^4.12.2"
 
 
 [build-system]
