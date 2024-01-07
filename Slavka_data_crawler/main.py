@@ -2,7 +2,9 @@ import httpx
 from selectolax.parser import HTMLParser
 import time
 from urllib.parse import urljoin
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, fields
+import json
+import csv
 
 
 #nauja dataclass, info rusiavimui
@@ -55,22 +57,59 @@ def parse_item_page(html):
         price=extract_text(html, "span#buy-box-product-price"),
         rating=extract_text(html, "span.cdr-rating__number_13-5-3")
     )
-    return new_item
+    return asdict(new_item)
 
 #Sukuriam funkcija, kuri parsins/extractins texta is html puslapio pagal css selektoriu
 def extract_text(html, selector):
     #grazins "None", jeigu neras prasomos grazinti informacijos, t.y. pavadinimo, produkto numerio, kainos arba reitingo
     try:
-        return html.css_first(selector).text()
+        #grazinam sutvarkyta teksta
+        text = html.css_first(selector).text()
+        return clean_data(text)
     except AttributeError:  #nereikia 'as err', nes returninam None
         return None
+
+#eksportuojam produktu sarasa i json
+def export_to_json(products):
+    with open("products.json", "w", encoding="utf-8") as f:
+        json.dump(products, f, ensure_ascii=False, indent=4)
+    print("saved to json")
+
+#eksportuojam produktu sarasa i csv
+def export_to_csv(products):
+    #sukuriam laukeliu pavadinimus, naudojant dataclass fields
+    field_names = [field.name for field in fields(Item)]
+    #surasomi produktai i csv faila
+    with open ("products.csv", "w") as f:
+        writer = csv.DictWriter(f, field_names)
+        writer.writeheader()
+        writer.writerows(products)
+    print("saved to csv")
+
+#f-ja isvalyti nereikalingus/papildomus simbolius is gautos informacijos produktu sarase
+def clean_data(value):
+    chars_to_remove = ["$", "Item", "#"]
+    for char in chars_to_remove:
+        if char in value:
+            value = value.replace(char, "")
+    #nepriklausomai nuo to, radom kokius simbolius pasalint, ar ne - grazinam reiksmes be nereikalingu tarpu
+    return value.strip()
+
+#f-ja irasyti papildomus produktus i csv faila
+#def append_to_csv(products):
+    #sukuriam laukeliu pavadinimus, naudojant dataclass fields
+#    field_names = [field.name for field in fields(Item)]
+    #pridedami papildomi produktai, neperrasat pagr. csv failo
+#    with open ("append.csv", "a") as f:
+#        writer = csv.DictWriter(f, field_names)
+#        writer.writerows(products)
 
 #pagrindine f-ja, kuri viska paleidzia
 def main():
     products = []
     baseurl = "https://www.rei.com/c/camping-and-hiking?page="
     #lupinam per puslapius, ir istraukiam produktus
-    for x in range(135,136):
+    for x in range(134,136):
         print(f"Surenkam info is puslapio: {x}")
         html = get_html(baseurl, page=x) #html failas = get_html f-jai; x -> page=x, nes tai tapo keyword argumentu get_html f-joje
 
@@ -80,15 +119,15 @@ def main():
         for url in product_urls:
             print(url)
             html = get_html(url)
-            products.append(parse_item_page(html))
 
-            #imetam uzdelsima 0.5sec, kad nesiusti per daug requestu vienu metu
+            products.append(parse_item_page(html)) #-> nebereikia, kai turim append_to_csv f-ja
+            #append_to_csv(parse_item_page(html)) #kiekviena karta grazins dictionary
+            #imetam uzdelsima 0.1sec, kad nesiusti per daug requestu vienu metu
             #ikeliam uzdelsima i produkto loop'a, kad uzdelsimas butu kiekviename PRODUKTO puslapyje, o ne PRODUKTU puslapyje
-            time.sleep(0.5)
+            time.sleep(0.1)
 
-    #atspausdinam produktus kaip dictionary, norint exportuoti i JSON ar CSV
-    for product in products:
-        print(asdict(product))
+    export_to_json(products)
+    export_to_csv(products)
 
 #jeigu paleidziam si main.py tiesiogiai - iskvies sia funkcija, o jeigu importuosim main.py, tuomet - ne
 if __name__ == "__main__":
